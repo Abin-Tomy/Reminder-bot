@@ -3,9 +3,25 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 from apscheduler.schedulers.background import BackgroundScheduler
 import sqlite3
 import logging
+import os
 from datetime import datetime, timedelta
 import pytz
 import re
+
+
+def load_env_file(path=".env"):
+    """Load key/value pairs from a local .env file into environment variables."""
+    if not os.path.exists(path):
+        return
+
+    with open(path, "r", encoding="utf-8") as env_file:
+        for line in env_file:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -254,10 +270,12 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Main ---
 def main():
-    # ⚠️ REPLACE THIS WITH YOUR ACTUAL BOT TOKEN ⚠️
-    TOKEN = "8272201598:AAHe2lzOsjtug__5VLtqi32vt4dtxkQghrQ"
-    
-    app = Application.builder().token(TOKEN).build()
+    load_env_file()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not token:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN is not set. Add it to .env or your environment.")
+
+    app = Application.builder().token(token).build()
     
     # Add command handlers
     app.add_handler(CommandHandler("start", start))
